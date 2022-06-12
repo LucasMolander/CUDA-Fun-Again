@@ -3,14 +3,13 @@
 #include <stdint.h>
 
 /**
-This is 26.67 billion saxpys per second for N = 200,000,000
+This is 13.02 billion daxpys per second for N = 200,000,000
 
-It has `n` and `a` as parameters,
-and there is a branch on the thread index being < n.
+It's for doubles rather than floats
 */
 
 #define N 200'000'000
-#define TOTAL_SIZE N * sizeof(float)
+#define TOTAL_SIZE N * sizeof(double)
 
 #define A 2.3f
 #define X_VAL 1.0f
@@ -21,7 +20,7 @@ and there is a branch on the thread index being < n.
 #define D_TO_H cudaMemcpyKind::cudaMemcpyDeviceToHost
 
 __global__
-void saxpy(uint64_t n, float a, float *d_x, float *d_y, float *d_z) {
+void daxpy(uint64_t n, double a, double *d_x, double *d_y, double *d_z) {
   uint64_t tIdx = threadIdx.x + (blockDim.x * blockIdx.x);
   if (tIdx < n) {
     d_z[tIdx] = (a * d_x[tIdx]) + d_y[tIdx];
@@ -84,7 +83,7 @@ int getDeviceProps(cudaDeviceProp *props) {
 }
 
 int main(void) {
-  printf("SAXPY Version 1\n");
+  printf("SAXPY Version 3 (it's really a DAXPY)\n");
 
   printf("Total size of a vector: %lld MB\n", TOTAL_SIZE / (1024 * 1024));
 
@@ -95,13 +94,13 @@ int main(void) {
   }
 
   cudaError e;
-  float *x, *y, *z;       // Host arrays
-  float *d_x, *d_y, *d_z; // Device arrays
+  double *x, *y, *z;       // Host arrays
+  double *d_x, *d_y, *d_z; // Device arrays
 
   // Allocate space on Host
-  x = (float*)malloc(TOTAL_SIZE);
-  y = (float*)malloc(TOTAL_SIZE);
-  z = (float*)malloc(TOTAL_SIZE);
+  x = (double*)malloc(TOTAL_SIZE);
+  y = (double*)malloc(TOTAL_SIZE);
+  z = (double*)malloc(TOTAL_SIZE);
 
   // Allocate space on Device
   if ((e = cudaMalloc(&d_x, TOTAL_SIZE)) != CUDA_SUCC) {
@@ -161,7 +160,7 @@ int main(void) {
 
   printf("A: %f\n", A);
 
-  saxpy<<<nBlocks, blockSize>>>(N, A, d_x, d_y, d_z);
+  daxpy<<<nBlocks, blockSize>>>(N, A, d_x, d_y, d_z);
 
   // Copy Z back to Host
   if ((e = cudaMemcpy(z, d_z, TOTAL_SIZE, D_TO_H)) != CUDA_SUCC) {

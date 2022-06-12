@@ -3,10 +3,10 @@
 #include <stdint.h>
 
 /**
-This is 26.67 billion saxpys per second for N = 200,000,000
+This is 26.31 billion saxpys per second for N = 200,000,000
 
-It has `n` and `a` as parameters,
-and there is a branch on the thread index being < n.
+It makes `a` compile-time constant (so it's not an arg),
+and doesn't have a branch on whether thread index is < n
 */
 
 #define N 200'000'000
@@ -21,11 +21,9 @@ and there is a branch on the thread index being < n.
 #define D_TO_H cudaMemcpyKind::cudaMemcpyDeviceToHost
 
 __global__
-void saxpy(uint64_t n, float a, float *d_x, float *d_y, float *d_z) {
+void saxpy(float *d_x, float *d_y, float *d_z) {
   uint64_t tIdx = threadIdx.x + (blockDim.x * blockIdx.x);
-  if (tIdx < n) {
-    d_z[tIdx] = (a * d_x[tIdx]) + d_y[tIdx];
-  }
+  d_z[tIdx] = (A * d_x[tIdx]) + d_y[tIdx];
 }
 
 int printDeviceInfo() {
@@ -84,7 +82,7 @@ int getDeviceProps(cudaDeviceProp *props) {
 }
 
 int main(void) {
-  printf("SAXPY Version 1\n");
+  printf("SAXPY Version 2\n");
 
   printf("Total size of a vector: %lld MB\n", TOTAL_SIZE / (1024 * 1024));
 
@@ -161,7 +159,7 @@ int main(void) {
 
   printf("A: %f\n", A);
 
-  saxpy<<<nBlocks, blockSize>>>(N, A, d_x, d_y, d_z);
+  saxpy<<<nBlocks, blockSize>>>(d_x, d_y, d_z);
 
   // Copy Z back to Host
   if ((e = cudaMemcpy(z, d_z, TOTAL_SIZE, D_TO_H)) != CUDA_SUCC) {
