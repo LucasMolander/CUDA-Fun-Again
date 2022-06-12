@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdint.h>
 
-#define N 20'000'000
+#define N 200'000'000
 #define TOTAL_SIZE N * sizeof(float)
 
 #define A 2.3f
@@ -14,8 +14,8 @@
 #define D_TO_H cudaMemcpyKind::cudaMemcpyDeviceToHost
 
 __global__
-void saxpy(int n, float a, float *d_x, float *d_y, float *d_z) {
-  int tIdx = threadIdx.x + (blockDim.x * blockIdx.x);
+void saxpy(uint64_t n, float a, float *d_x, float *d_y, float *d_z) {
+  uint64_t tIdx = threadIdx.x + (blockDim.x * blockIdx.x);
   if (tIdx < n) {
     d_z[tIdx] = (a * d_x[tIdx]) + d_y[tIdx];
   }
@@ -79,6 +79,8 @@ int getDeviceProps(cudaDeviceProp *props) {
 int main(void) {
   printf("main()\n");
 
+  printf("Total size of a vector: %lld MB\n", TOTAL_SIZE / (1024 * 1024));
+
   cudaDeviceProp props;
   if (getDeviceProps(&props) != 0) {
     printf("Unable to get device props\n");
@@ -109,7 +111,7 @@ int main(void) {
   }
 
   // Set the values on Host (Z is for the result)
-  for (int i = 0; i < N; i++) {
+  for (uint64_t i = 0; i < N; i++) {
     x[i] = X_VAL;
     y[i] = Y_VAL;
   }
@@ -142,22 +144,22 @@ int main(void) {
 
   // Grid size
   uint64_t maxGridSizeX = props.maxGridSize[0];
-  int nBlocks = N / blockSize;
+  uint64_t nBlocks = N / blockSize;
   int nExtraThreads = N % blockSize;
   if (nExtraThreads > 0) {
     ++nBlocks;
   }
 
-  printf("N: %d\n", N);
+  printf("N: %lld\n", (uint64_t)N);
   printf("Warp size: %d\n", warpSize);
   printf("Max block size X: %lld\n", maxBlockSizeX);
   printf("Block size: %d\n", blockSize);
   printf("Max grid size X: %lld\n", maxGridSizeX);
-  printf("N blocks: %d\n", nBlocks);
+  printf("N blocks: %lld\n", nBlocks);
   printf("N extra threads (last block): %d\n", nExtraThreads);
 
   if (nBlocks > maxGridSizeX) {
-    printf("nBlocks > maxGridSizeX (%d > %lld)\n", nBlocks, maxGridSizeX);
+    printf("nBlocks > maxGridSizeX (%lld > %lld)\n", nBlocks, maxGridSizeX);
     return 1;
   }
 
