@@ -8,3 +8,8 @@
 *.lib
 *.nvvp
 *.exp
+
+.vscode
+.vscode/
+.vscode/*
+/.vscode
